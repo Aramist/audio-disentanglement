@@ -1,0 +1,30 @@
+[project]
+name = "audio-disentanglement"
+version = "0.1.0"
+description = "Disentangle representations of audio models"
+readme = "README.md"
+authors = [
+    { name = "Aramis Tanelus", email = "aramis.tanelus@nyu.edu" }
+]
+requires-python = ">=3.13"
+dependencies = [
+    "audiomanifolds",
+    "h5py>=3.16.0",
+    "lightning>=2.6.5",
+    "numpy>=2.4.6",
+    "torch>=2.9.1",
+    "wandb>=0.27.2",
+]
+
+[build-system]
+requires = ["uv_build>=0.9.8,<0.10.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "black>=26.5.1",
+    "isort>=8.0.1",
+]
+
+[tool.uv.sources]
+audiomanifolds = { git = "ssh://git@github.com/Aramist/audio-embeddings.git" }
