@@ -127,6 +127,12 @@ if __name__ == "__main__":
         type=Path,
         help="Path to the input data for training (directory).",
     )
+    parser.add_argument(
+        "--save_dir",
+        type=Path,
+        default=Path(".") / "sweep_runs",
+        help="Directory to save the sweep runs.",
+    )
     parser.add_argument("--encoder", type=str, choices=["CLAP", "PANN", "encodec"])
     args = parser.parse_args()
     if args.data is None:
@@ -134,11 +140,13 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    while (save_path := Path(".") / "sweep_runs" / rand_ascii()).exists():
+    while (save_path := args.save_dir / rand_ascii()).exists():
         pass
     save_path.mkdir(parents=True, exist_ok=False)
 
-    exp = wandb.init()
+    exp = wandb.init(
+        dir=str(save_path),
+    )
     train_model(
         encoding_model_name=args.encoder,
         data_dir=args.data,
