@@ -1,0 +1,46 @@
+run_cap: 1000
+method: random
+metric:
+  goal: minimize
+  name: val_loss
+parameters:
+  dims_per_aug:
+    parameters:
+      gain:
+        distribution: int_uniform
+        max: 20
+        min: 1
+      pitch_shifting:
+        distribution: int_uniform
+        max: 20
+        min: 1
+      time_stretching:
+        distribution: int_uniform
+        max: 20
+        min: 1
+  disentangler_num_layers:
+    distribution: int_uniform
+    max: 8
+    min: 2
+  disentangler_type:
+    distribution: categorical
+    values:
+    - triangular
+    - radialflow
+    - planarflow
+  disentangler_nonlinearity:
+    distribution: categorical
+    values:
+    - identity
+    - leaky_relu
+    - tanh
+    - sigmoid
+program: scripts/sweep.py
+command:
+  - ${env}
+  - ${interpreter}
+  - ${program}
+  - --data
+  - ${envvar:DATA_PATH}
+  - --encoder
+  - CLAP

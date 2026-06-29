@@ -112,6 +112,7 @@ class EmbeddingDataModule(LightningDataModule):
             shuffle=True,
             num_workers=self.num_workers,
             collate_fn=partial(collate_fn, ordered_aug_names=self.ordered_aug_names),
+            persistent_workers=True,
         )
 
     def val_dataloader(self):
@@ -121,6 +122,7 @@ class EmbeddingDataModule(LightningDataModule):
             shuffle=False,
             num_workers=self.num_workers,
             collate_fn=partial(collate_fn, ordered_aug_names=self.ordered_aug_names),
+            persistent_workers=True,
         )
 
     def predict_dataloader(self):

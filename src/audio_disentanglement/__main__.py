@@ -73,7 +73,10 @@ def train(
     config: ConfigNamespace = DEFAULT_CONFIG,
 ):
     logger = lightning.pytorch.loggers.WandbLogger(
-        project="audio-disentangle", name=run_name, save_dir=save_dir / "logs"
+        project="audio-disentangle",
+        name=run_name,
+        save_dir=save_dir / "logs",
+        log_model=False,
     )
     datamodule = load_datamodule(
         data_dir,

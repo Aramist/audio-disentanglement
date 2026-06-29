@@ -8,3 +8,7 @@ wheels/
 
 # Virtual environments
 .venv
+
+# run logs
+wandb/
+sweep_runs/

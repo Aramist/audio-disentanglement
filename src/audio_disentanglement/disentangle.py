@@ -5,16 +5,42 @@ import torch
 from audiomanifolds.embeddings.interfaces.base import AudioEmbedder
 from torch import nn
 
-from .invertibles import Identity, LinearTriangular
+from .invertibles import Identity, LinearTriangular, PlanarFlow, RadialFlow
 
 
 def _build_disentangler(
-    disentangler_type: tp.Literal["identity", "triangular"], embedding_dim: int
+    disentangler_type: tp.Literal["identity", "triangular", "radialflow", "planarflow"],
+    disentangler_num_layers: int,
+    disentangler_nonlinearity: tp.Literal["identity", "tanh", "leaky_relu", "sigmoid"],
+    embedding_dim: int,
 ) -> nn.Module:
+    non_linearities = {
+        "identity": nn.Identity,
+        "tanh": nn.Tanh,
+        "leaky_relu": nn.LeakyReLU,
+        "sigmoid": nn.Sigmoid,
+    }
     if disentangler_type == "identity":
         return Identity()
     elif disentangler_type == "triangular":
-        return LinearTriangular(embedding_dim)
+        layers = [LinearTriangular(embedding_dim)]
+        for _ in range(disentangler_num_layers - 1):
+            layers.append(non_linearities[disentangler_nonlinearity]())
+            layers.append(LinearTriangular(embedding_dim))
+
+        return nn.Sequential(*layers)
+    elif disentangler_type == "radialflow":
+        layers = [RadialFlow(embedding_dim)]
+        for _ in range(disentangler_num_layers - 1):
+            layers.append(non_linearities[disentangler_nonlinearity]())
+            layers.append(RadialFlow(embedding_dim))
+        return nn.Sequential(*layers)
+    elif disentangler_type == "planarflow":
+        layers = [PlanarFlow(embedding_dim)]
+        for _ in range(disentangler_num_layers - 1):
+            layers.append(non_linearities[disentangler_nonlinearity]())
+            layers.append(PlanarFlow(embedding_dim))
+        return nn.Sequential(*layers)
     else:
         raise ValueError(f"Unsupported disentangler type: {disentangler_type}")
 
@@ -23,7 +49,11 @@ class Disentangler(L.LightningModule):
     def __init__(
         self,
         encoder: AudioEmbedder,
-        disentangler_type: tp.Literal["identity", "triangular"],
+        disentangler_type: tp.Literal[
+            "identity", "triangular", "radialflow", "planarflow"
+        ],
+        disentangler_num_layers: int,
+        disentangler_nonlinearity: tp.Literal["identity",],
         dimensions_per_aug: list[int],
     ):
         """
@@ -38,12 +68,16 @@ class Disentangler(L.LightningModule):
         self.encoder = encoder
         self.encoder.requires_grad_(False)
         self.encoder_dim = self.encoder.embedding_dim
+        self.encoder = None
         if self.encoder_dim is None:
             raise ValueError("Encoder must have a defined embedding dimension.")
         self.encoder_dim: int  # for the type checker
 
         self.disentangler: nn.Module = _build_disentangler(
-            disentangler_type, self.encoder_dim
+            disentangler_type,
+            disentangler_num_layers,
+            disentangler_nonlinearity,
+            self.encoder_dim,
         )
 
     def _make_mask(self, aug_index: int) -> torch.Tensor:
@@ -87,6 +121,7 @@ class Disentangler(L.LightningModule):
         Returns:
             torch.Tensor: A disentangled representation of the input audio. (*batch_size, embedding_dim)
         """
+        raise NotImplementedError("Delete the line setting self.encoder to None")
         embedding: torch.Tensor = self.encoder(x)
         disentangled_embedding = self.disentangler(embedding)
         return disentangled_embedding
@@ -114,7 +149,6 @@ class Disentangler(L.LightningModule):
         x = batch["embedding"]
         augmentation_indices: list[int] = batch["augmentation_index"]
         x_d = self.disentangler(x)
-        breakpoint()
         masks = self._make_multiple_masks(augmentation_indices).to(x.device)
         losses = ((x_d[..., 1, :] - x_d[..., 0, :]) ** 2) * masks
         losses = losses.sum(dim=-1)
