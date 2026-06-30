@@ -8,7 +8,6 @@ import lightning as L
 import lightning.pytorch.loggers
 import numpy as np
 import torch
-import wandb
 from audiomanifolds.embeddings import (
     AudioEmbedder,
     CLAPAudioEmbedder,
@@ -17,6 +16,7 @@ from audiomanifolds.embeddings import (
 )
 from lightning.pytorch import callbacks
 
+import wandb
 from audio_disentanglement.dataloading import load_datamodule
 from audio_disentanglement.disentangle import Disentangler
 from audio_disentanglement.util import ConfigNamespace
@@ -128,7 +128,7 @@ if __name__ == "__main__":
         help="Path to the input data for training (directory).",
     )
     parser.add_argument(
-        "--save_dir",
+        "--save-dir",
         type=Path,
         default=Path(".") / "sweep_runs",
         help="Directory to save the sweep runs.",

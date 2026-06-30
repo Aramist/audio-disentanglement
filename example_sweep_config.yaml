@@ -44,3 +44,5 @@ command:
   - ${envvar:DATA_PATH}
   - --encoder
   - CLAP
+  - --save-dir
+  - ${envvar:SWEEP_SAVE_DIR}
