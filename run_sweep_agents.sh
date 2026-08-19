@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=comp_emb
+#SBATCH --job-name=wandb_sweep
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=16
 #SBATCH --gres=gpu:1
@@ -20,4 +20,4 @@ sweepid=""
 singularity exec --nv --fakeroot \
     --overlay /scratch/at4219/disentanglement_project.ext3:ro \
     $CUDA_IMAGE \
-    /bin/bash -c "source /ext3/audio-disentanglement/.venv/bin/activate; wandb agent $sweepid"
+    /bin/bash -c "source /ext3/audio-disentanglement/.venv/bin/activate; cd /ext3/audio-disentanglement; wandb agent $sweepid"

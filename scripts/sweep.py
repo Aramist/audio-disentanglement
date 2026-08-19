@@ -8,6 +8,7 @@ import lightning as L
 import lightning.pytorch.loggers
 import numpy as np
 import torch
+import wandb
 from audiomanifolds.embeddings import (
     AudioEmbedder,
     CLAPAudioEmbedder,
@@ -16,7 +17,6 @@ from audiomanifolds.embeddings import (
 )
 from lightning.pytorch import callbacks
 
-import wandb
 from audio_disentanglement.dataloading import load_datamodule
 from audio_disentanglement.disentangle import Disentangler
 from audio_disentanglement.util import ConfigNamespace
@@ -59,7 +59,7 @@ def make_trainer(config: ConfigNamespace, save_directory: Path, **kwargs) -> L.T
                 verbose=False,
             ),
             # End training if validation accuracy does not improve
-            callbacks.EarlyStopping(monitor="val_loss", mode="min", patience=5),
+            # callbacks.EarlyStopping(monitor="val_loss", mode="min", patience=5),
             # End training if weights explode
             callbacks.EarlyStopping(
                 monitor="train_loss",

@@ -1,5 +1,5 @@
 run_cap: 1000
-method: random
+method: bayes
 metric:
   goal: minimize
   name: val_loss
@@ -18,24 +18,38 @@ parameters:
         distribution: int_uniform
         max: 20
         min: 1
+  num_training_samples_per_sound:
+    distribution: categorical
+    values:
+    - 2
+    - 10
+    - 20
+    - 40
+  coupling_flow_partition_strategy:
+    distribution: categorical
+    values:
+    - random
+    - haar
+  coupling_flow_hidden_layer_size:
+    distribution: categorical
+    values:
+    - 256
+    - 512
+    - 1024
+    - 2048
+  coupling_flow_num_hidden_layers:
+    distribution: int_uniform
+    max: 5
+    min: 1
   disentangler_num_layers:
     distribution: int_uniform
-    max: 8
-    min: 2
+    max: 12
+    min: 3
   disentangler_type:
     distribution: categorical
     values:
-    - triangular
-    - radialflow
-    - planarflow
-  disentangler_nonlinearity:
-    distribution: categorical
-    values:
-    - identity
-    - leaky_relu
-    - tanh
-    - sigmoid
-program: scripts/sweep.py
+    - couplingflow
+program: /ext3/audio-disentanglement/scripts/sweep.py
 command:
   - ${env}
   - ${interpreter}

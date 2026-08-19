@@ -23,10 +23,12 @@ class EmbeddingDataset(Dataset):
         hdf5_path: Path,
         augmentation_name: str,
         inference_mode: bool = False,
+        num_samples_per_sound: int = 2,
     ):
         self.hdf5_path = hdf5_path
         self.augmentation_name = augmentation_name
         self.inference_mode = inference_mode
+        self.num_samples_per_sound = num_samples_per_sound
         self.rng = np.random.default_rng()
         self.hdf5_handle = None
 
@@ -47,7 +49,9 @@ class EmbeddingDataset(Dataset):
                 idx
             ]  # (num_augs_per_sound, embedding_dim)
         else:
-            rand_indices = self.rng.choice(self.augs_per_sound, size=2, replace=False)
+            rand_indices = self.rng.choice(
+                self.augs_per_sound, size=self.num_samples_per_sound, replace=False
+            )
             # hdf5 doesn't like advanced indexing with non-sorted arrays
             embedding = np.stack(
                 [
@@ -68,16 +72,19 @@ class EmbeddingDataModule(LightningDataModule):
     def __init__(
         self,
         hdf5_paths: dict[str, Path],
+        augmentation_names: list[str],
         batch_size: int = 32,
         num_workers: int = 4,
         random_seed: int = 42,
+        num_training_samples_per_sound: int = 2,
     ):
         super().__init__()
         self.hdf5_paths = hdf5_paths
         self.batch_size = batch_size
         self.num_workers = num_workers
         self.random_seed = random_seed
-        self.ordered_aug_names = list(hdf5_paths.keys())
+        self.num_train_samples = num_training_samples_per_sound
+        self.ordered_aug_names: list[str] = augmentation_names
 
     def setup(self, stage=None):
         self.datasets = {
@@ -85,6 +92,7 @@ class EmbeddingDataModule(LightningDataModule):
                 hdf5_path=path,
                 augmentation_name=aug_name,
                 inference_mode=False,
+                num_samples_per_sound=self.num_train_samples,
             )
             for aug_name, path in self.hdf5_paths.items()
         }
@@ -145,14 +153,26 @@ class EmbeddingDataModule(LightningDataModule):
         )
 
 
-def load_datamodule(data_dir: Path, model_name: str, **kwargs) -> EmbeddingDataModule:
+def load_datamodule(
+    data_dir: Path,
+    model_name: str,
+    augmentation_names: list[str],
+    *,
+    batch_size: int = 32,
+    num_training_samples_per_sound: int = 2,
+    num_workers: int = 4,
+    random_seed: int = 42,
+) -> EmbeddingDataModule:
     fmt = "BSD10k_{model_name}_{aug_name}.h5"
     hdf5_paths = {
         aug_name: data_dir / fmt.format(model_name=model_name, aug_name=aug_name)
-        for aug_name in [
-            "pitch_shifting",
-            "time_stretching",
-            "gain",
-        ]
+        for aug_name in augmentation_names
     }
-    return EmbeddingDataModule(hdf5_paths=hdf5_paths, **kwargs)
+    return EmbeddingDataModule(
+        hdf5_paths=hdf5_paths,
+        augmentation_names=augmentation_names,
+        batch_size=batch_size,
+        num_workers=num_workers,
+        random_seed=random_seed,
+        num_training_samples_per_sound=num_training_samples_per_sound,
+    )

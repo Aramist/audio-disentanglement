@@ -1,0 +1,19 @@
+{
+    "num_optimization_steps": 90000,
+    "clip_gradients": true,
+    "batch_size": 64,
+    "num_training_samples_per_sound": 2,
+    "augmentations": [
+        "gain", "pitch_shifting", "time_stretching"
+    ],
+    "dims_per_aug": {
+        "gain": 5,
+        "pitch_shifting": 10,
+        "time_stretching": 10
+    },
+    "disentangler_type": "couplingflow",
+    "disentangler_num_layers": 10,
+    "coupling_flow_partition_strategy": "haar",
+    "coupling_flow_hidden_layer_size": 512,
+    "coupling_flow_num_hidden_layers": 2
+}
