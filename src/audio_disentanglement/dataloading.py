@@ -155,7 +155,7 @@ class EmbeddingDataModule(LightningDataModule):
 
 def load_datamodule(
     data_dir: Path,
-    model_name: str,
+    encoder_name: str,
     augmentation_names: list[str],
     *,
     batch_size: int = 32,
@@ -165,7 +165,7 @@ def load_datamodule(
 ) -> EmbeddingDataModule:
     fmt = "BSD10k_{model_name}_{aug_name}.h5"
     hdf5_paths = {
-        aug_name: data_dir / fmt.format(model_name=model_name, aug_name=aug_name)
+        aug_name: data_dir / fmt.format(model_name=encoder_name, aug_name=aug_name)
         for aug_name in augmentation_names
     }
     return EmbeddingDataModule(

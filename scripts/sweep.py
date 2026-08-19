@@ -9,15 +9,9 @@ import lightning.pytorch.loggers
 import numpy as np
 import torch
 import wandb
-from audiomanifolds.embeddings import (
-    AudioEmbedder,
-    CLAPAudioEmbedder,
-    EncodecEmbedder,
-    PannEmbedder,
-)
 from lightning.pytorch import callbacks
 
-from audio_disentanglement.dataloading import load_datamodule
+from audio_disentanglement.dataloading import EmbeddingDataModule, load_datamodule
 from audio_disentanglement.disentangle import Disentangler
 from audio_disentanglement.util import ConfigNamespace
 
@@ -31,21 +25,25 @@ def rand_ascii(length: int = 8) -> str:
     )
 
 
-def retrieve_encoder(encoder_name: str) -> AudioEmbedder:
+def retrieve_encoder_dim(encoder_name: str) -> int:
     if encoder_name == "CLAP":
-        # return CLAPAudioEmbedder.from_pretrained()
-        return CLAPAudioEmbedder()
+        # return CLAPAudioEmbedder()
+        return 512
     elif encoder_name == "PANN":
-        # return PannEmbedder.from_pretrained()
-        return PannEmbedder()
+        # return PannEmbedder()
+        return 2048
     elif encoder_name == "encodec":
-        # return EncodecEmbedder.from_pretrained()
-        return EncodecEmbedder()
+        # return EncodecEmbedder()
+        return 128
     else:
         raise ValueError(f"Unsupported encoder name: {encoder_name}")
 
 
 def make_trainer(config: ConfigNamespace, save_directory: Path, **kwargs) -> L.Trainer:
+    additional_callbacks = kwargs.get("callbacks", [])
+    if "callbacks" in kwargs:
+        del kwargs["callbacks"]  # Remove callbacks from kwargs to avoid duplication
+
     return L.Trainer(
         max_steps=config.num_optimization_steps,
         default_root_dir=save_directory,
@@ -68,6 +66,7 @@ def make_trainer(config: ConfigNamespace, save_directory: Path, **kwargs) -> L.T
                 verbose=False,
                 patience=100000,  # only looking to stop if non-finite
             ),
+            *additional_callbacks,
         ],
         gradient_clip_val=1.0 if config.clip_gradients else 0.0,
         num_sanity_val_steps=0,
@@ -97,16 +96,15 @@ def train_model(
     trainer = make_trainer(model_config, save_directory=save_dir, logger=logger)
 
     datamodule = load_datamodule(
-        data_dir, model_name=encoding_model_name, batch_size=model_config.batch_size
+        data_dir=data_dir,
+        encoder_name=encoding_model_name,
+        augmentation_names=model_config.augmentations,
+        batch_size=model_config.batch_size,
+        num_training_samples_per_sound=model_config.num_training_samples_per_sound,
     )
-    aug_names = datamodule.ordered_aug_names
-    dims_per_aug = [model_config.dims_per_aug[aug_name] for aug_name in aug_names]
     model = Disentangler(
-        encoder=retrieve_encoder(encoding_model_name),
-        disentangler_type=model_config.disentangler_type,
-        disentangler_num_layers=model_config.disentangler_num_layers,
-        disentangler_nonlinearity=model_config.disentangler_nonlinearity,
-        dimensions_per_aug=dims_per_aug,
+        config=model_config,
+        encoder_dim=retrieve_encoder_dim(encoding_model_name),
     )
     trainer.fit(model, datamodule=datamodule)
     return trainer

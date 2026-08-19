@@ -26,7 +26,7 @@ from .util import ConfigNamespace
 DEFAULT_CONFIG = ConfigNamespace()
 
 
-class InferencWriter(BasePredictionWriter):
+class InferenceWriter(BasePredictionWriter):
     def __init__(
         self,
         output_dir: Path,
@@ -78,7 +78,8 @@ def retrieve_encoder_dim(encoder_name: str) -> int:
 def make_trainer(config: ConfigNamespace, save_directory: Path, **kwargs) -> L.Trainer:
     num_nodes = int(os.getenv("SLURM_NNODES", 1))
     additional_callbacks = kwargs.get("callbacks", [])
-    del kwargs["callbacks"]  # Remove callbacks from kwargs to avoid duplication
+    if "callbacks" in kwargs:
+        del kwargs["callbacks"]  # Remove callbacks from kwargs to avoid duplication
     return L.Trainer(
         max_steps=config.num_optimization_steps,
         num_nodes=num_nodes,
@@ -230,11 +231,11 @@ if __name__ == "__main__":
     datamodule = load_datamodule(
         args.data,
         augmentation_names=model_config.augmentations,
-        model_name=args.encoder,
+        encoder_name=args.encoder,
         batch_size=model_config.batch_size,
         num_training_samples_per_sound=model_config.num_training_samples_per_sound,
     )
-    writer = InferencWriter(
+    writer = InferenceWriter(
         output_dir=args.save_path / f"{args.encoder}_disentangled_embeddings",
         ordered_aug_names=datamodule.ordered_aug_names,
     )
